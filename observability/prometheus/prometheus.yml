@@ -1,0 +1,63 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - localhost:9090
+
+  - job_name: gateway
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - gateway-prod:7092
+
+  - job_name: ms-auth
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - ms-auth:8081
+
+  - job_name: ms-user
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - ms-user:8082
+
+  - job_name: ms-technician
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - ms-technician:8083
+
+  - job_name: ms-service-request
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - ms-service-request:8084
+
+  - job_name: ms-assignment
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - ms-assignment:8085
+
+  - job_name: ms-payment
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - ms-payment:8086
+
+  - job_name: ms-review
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - ms-review:8087
+
+  - job_name: ms-notification
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - ms-notification:8088

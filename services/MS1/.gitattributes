@@ -1,0 +1,4 @@
+/mvnw text eol=lf
+*.cmd text eol=crlf
+JWT_SECRET=change-me-to-a-long-random-256-bit-secret
+INTERNAL_SERVICE_TOKEN=change-me-internal-service-token

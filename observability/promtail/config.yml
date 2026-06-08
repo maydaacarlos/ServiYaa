@@ -1,0 +1,91 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: gateway-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: gateway
+          service: gateway
+          __path__: /var/log/ms/gateway/*.log
+
+  - job_name: auth-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: auth
+          service: ms-auth
+          __path__: /var/log/ms/auth/*.log
+
+  - job_name: user-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: user
+          service: ms-user
+          __path__: /var/log/ms/user/*.log
+
+  - job_name: payment-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: payment
+          service: ms-payment
+          __path__: /var/log/ms/payment/*.log
+
+  - job_name: service-request-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: service-request
+          service: ms-service-request
+          __path__: /var/log/ms/service-request/*.log
+
+  - job_name: technician-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: technician
+          service: ms-technician
+          __path__: /var/log/ms/technician/*.log
+
+  - job_name: assignment-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: assignment
+          service: ms-assignment
+          __path__: /var/log/ms/assignment/*.log
+
+  - job_name: notification-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: notification
+          service: ms-notification
+          __path__: /var/log/ms/notification/*.log
+
+  - job_name: review-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: review
+          service: ms-review
+          __path__: /var/log/ms/review/*.log

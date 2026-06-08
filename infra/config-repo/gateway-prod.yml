@@ -1,0 +1,144 @@
+server:
+  port: 7092
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: ms-auth-route
+          uri: lb://MS-AUTH
+          predicates:
+            - Path=/api/v1/auth/**,/auth/**
+        - id: ms-user-route
+          uri: lb://MS-USER
+          predicates:
+            - Path=/api/v1/clientes/**,/api/v1/usuarios/**
+        - id: ms-technician-route
+          uri: lb://MS-TECHNICIAN
+          predicates:
+            - Path=/api/v1/tecnicos/**
+        - id: ms-service-request-route
+          uri: lb://MS-SERVICE-REQUEST
+          predicates:
+            - Path=/api/v1/solicitudes/**
+        - id: ms-assignment-route
+          uri: lb://MS-ASSIGNMENT
+          predicates:
+            - Path=/api/v1/asignaciones/**
+        - id: ms-payment-route
+          uri: lb://MS-PAYMENT
+          predicates:
+            - Path=/api/v1/pagos/**
+        - id: ms-review-route
+          uri: lb://MS-REVIEW
+          predicates:
+            - Path=/api/v1/reviews/**
+        - id: ms-notification-route
+          uri: lb://MS-NOTIFICATION
+          predicates:
+            - Path=/api/v1/notificaciones/**
+        - id: ms-auth-docs
+          uri: lb://MS-AUTH
+          predicates:
+            - Path=/docs/ms1/v3/api-docs
+          filters:
+            - RewritePath=/docs/ms1/v3/api-docs, /v3/api-docs
+        - id: ms-user-docs
+          uri: lb://MS-USER
+          predicates:
+            - Path=/docs/ms2/v3/api-docs
+          filters:
+            - RewritePath=/docs/ms2/v3/api-docs, /v3/api-docs
+        - id: ms-technician-docs
+          uri: lb://MS-TECHNICIAN
+          predicates:
+            - Path=/docs/ms3/v3/api-docs
+          filters:
+            - RewritePath=/docs/ms3/v3/api-docs, /v3/api-docs
+        - id: ms-service-request-docs
+          uri: lb://MS-SERVICE-REQUEST
+          predicates:
+            - Path=/docs/ms4/v3/api-docs
+          filters:
+            - RewritePath=/docs/ms4/v3/api-docs, /v3/api-docs
+        - id: ms-assignment-docs
+          uri: lb://MS-ASSIGNMENT
+          predicates:
+            - Path=/docs/ms5/v3/api-docs
+          filters:
+            - RewritePath=/docs/ms5/v3/api-docs, /v3/api-docs
+        - id: ms-payment-docs
+          uri: lb://MS-PAYMENT
+          predicates:
+            - Path=/docs/ms6/v3/api-docs
+          filters:
+            - RewritePath=/docs/ms6/v3/api-docs, /v3/api-docs
+        - id: ms-review-docs
+          uri: lb://MS-REVIEW
+          predicates:
+            - Path=/docs/ms7/v3/api-docs
+          filters:
+            - RewritePath=/docs/ms7/v3/api-docs, /v3/api-docs
+        - id: ms-notification-docs
+          uri: lb://MS-NOTIFICATION
+          predicates:
+            - Path=/docs/ms8/v3/api-docs
+          filters:
+            - RewritePath=/docs/ms8/v3/api-docs, /v3/api-docs
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    urls:
+      - name: MS1 Auth
+        url: /docs/ms1/v3/api-docs
+      - name: MS2 User
+        url: /docs/ms2/v3/api-docs
+      - name: MS3 Technician
+        url: /docs/ms3/v3/api-docs
+      - name: MS4 Service Request
+        url: /docs/ms4/v3/api-docs
+      - name: MS5 Assignment
+        url: /docs/ms5/v3/api-docs
+      - name: MS6 Payment
+        url: /docs/ms6/v3/api-docs
+      - name: MS7 Review
+        url: /docs/ms7/v3/api-docs
+      - name: MS8 Notification
+        url: /docs/ms8/v3/api-docs
+    urls-primary-name: MS1 Auth
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://registry-server-prod:7082/eureka
+
+management:
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  endpoint:
+    gateway:
+      access: unrestricted
+    health:
+      show-details: never
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+logging:
+  level:
+    root: INFO
+  file:
+    name: ./logs/gateway.log
+jwt:
+  secret: ${JWT_SECRET}
+  issuer: ${JWT_ISSUER:auth}
+
+serviya:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}

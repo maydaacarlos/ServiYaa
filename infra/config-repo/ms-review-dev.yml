@@ -1,0 +1,72 @@
+server:
+  port: 8087
+
+spring:
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+      client:
+        config:
+          default:
+            connectTimeout: 2000
+            readTimeout: 3000
+  datasource:
+    url: jdbc:mysql://${REVIEW_DB_HOST:localhost}:${REVIEW_DB_PORT:3317}/${REVIEW_DB_NAME:db_review}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${REVIEW_DB_USERNAME:root}
+    password: ${REVIEW_DB_PASSWORD:root}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+  flyway:
+    enabled: true
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-please-change-dev-secret-please-change}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:7081/eureka
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,circuitbreakerevents
+  endpoint:
+    health:
+      show-details: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  health:
+    circuitbreakers:
+      enabled: true
+  metrics:
+    tags:
+      application: ms-review
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      msTechnician:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 10s
+
+logging:
+  level:
+    root: INFO
+  file:
+    name: ./logs/ms-review.log
+
+serviya:
+  internal-token: ${INTERNAL_SERVICE_TOKEN:dev-internal-service-token}
