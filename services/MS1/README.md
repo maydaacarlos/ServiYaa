@@ -1,4 +1,4 @@
-# Microservicio MS1 - Auth (ms-auth)
+# MS1 Auth de ServiYaa
 
 Microservicio Spring Boot para la autenticación y gestión de credenciales dentro de la arquitectura de microservicios 2026.
 

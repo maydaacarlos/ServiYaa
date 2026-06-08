@@ -1,4 +1,4 @@
-# Observability Platform
+# Observabilidad de ServiYaa
 
 Stack externo y compartido de observabilidad para la plataforma.
 

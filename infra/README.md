@@ -1,4 +1,4 @@
-# Infraestructura de Microservicios
+# Infraestructura de ServiYaa
 
 Este modulo contiene la infraestructura base de la arquitectura de microservicios.
 
