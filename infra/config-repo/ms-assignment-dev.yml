@@ -1,0 +1,79 @@
+server:
+  port: 8085
+
+spring:
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+      client:
+        config:
+          default:
+            connectTimeout: 2000
+            readTimeout: 3000
+  datasource:
+    url: jdbc:mysql://${ASSIGNMENT_DB_HOST:localhost}:${ASSIGNMENT_DB_PORT:3307}/${ASSIGNMENT_DB_NAME:db_asignacion}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${ASSIGNMENT_DB_USERNAME:root}
+    password: ${ASSIGNMENT_DB_PASSWORD:root}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+  flyway:
+    enabled: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:7081/eureka
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,circuitbreakerevents
+  endpoint:
+    health:
+      show-details: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  health:
+    circuitbreakers:
+      enabled: true
+  metrics:
+    tags:
+      application: ms-assignment
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        register-health-indicator: true
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 3s
+
+logging:
+  level:
+    root: INFO
+  file:
+    name: ./logs/ms-assignment.log
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-key-change-me-please-32chars}
+
+serviya:
+  internal-token: ${INTERNAL_SERVICE_TOKEN:dev-internal-service-token}

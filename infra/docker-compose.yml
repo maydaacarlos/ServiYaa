@@ -1,0 +1,500 @@
+name: infra-platform
+
+version: "3.9"
+
+services:
+  config-server-dev:
+    build:
+      context: ./config-server
+      dockerfile: Dockerfile
+    container_name: config-server-dev
+    restart: unless-stopped
+    ports:
+      - "7071:7071"
+    volumes:
+      - ./config-repo:/config-repo
+    environment:
+      SPRING_PROFILES_ACTIVE: native
+      CONFIG_REPO_LOCATION: file:/config-repo
+    networks:
+      - ms-net
+
+  config-server-prod:
+    build:
+      context: ./config-server
+      dockerfile: Dockerfile
+    container_name: config-server-prod
+    restart: unless-stopped
+    ports:
+      - "7072:7072"
+    volumes:
+      - ./config-repo:/config-repo
+    environment:
+      SPRING_PROFILES_ACTIVE: native
+      CONFIG_REPO_LOCATION: file:/config-repo
+      SERVER_PORT: 7072
+    networks:
+      - ms-net
+
+  registry-server-dev:
+    build:
+      context: ./registry-server
+      dockerfile: Dockerfile
+    container_name: registry-server-dev
+    restart: unless-stopped
+    ports:
+      - "7081:7081"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      CONFIG_SERVER_URL: http://config-server-dev:7071
+      SERVER_PORT: 7081
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
+      EUREKA_CLIENT_FETCH_REGISTRY: "true"
+      EUREKA_CLIENT_DEFAULT_ZONE: http://registry-server-prod:7082/eureka/
+    depends_on:
+      - config-server-dev
+    networks:
+      - ms-net
+
+  registry-server-prod:
+    build:
+      context: ./registry-server
+      dockerfile: Dockerfile
+    container_name: registry-server-prod
+    restart: unless-stopped
+    ports:
+      - "7082:7082"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      CONFIG_SERVER_URL: http://config-server-prod:7072
+      SERVER_PORT: 7082
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
+      EUREKA_CLIENT_FETCH_REGISTRY: "true"
+      EUREKA_CLIENT_DEFAULT_ZONE: http://registry-server-dev:7081/eureka/
+    depends_on:
+      - config-server-prod
+    networks:
+      - ms-net
+
+  gateway-dev:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: gateway-dev
+    restart: unless-stopped
+    ports:
+      - "7091:7091"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      CONFIG_SERVER_URL: http://config-server-dev:7071
+      SERVER_PORT: 7091
+      EUREKA_SERVER_URL: http://registry-server-dev:7081/eureka/
+    depends_on:
+      - config-server-dev
+      - registry-server-dev
+    networks:
+      - ms-net
+
+  gateway-prod:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: gateway-prod
+    restart: unless-stopped
+    ports:
+      - "7092:7092"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      CONFIG_SERVER_URL: http://config-server-prod:7072
+      SERVER_PORT: 7092
+      EUREKA_SERVER_URL: http://registry-server-prod:7082/eureka/
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+    depends_on:
+      - config-server-prod
+      - registry-server-prod
+    networks:
+      - ms-net
+
+  mysql-auth:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${AUTH_MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${AUTH_DB_USERNAME}
+      MYSQL_PASSWORD: ${AUTH_DB_PASSWORD}
+      MYSQL_DATABASE: db_auth
+    ports:
+      - "3311:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks:
+      - ms-net
+
+  mysql-user:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${USER_MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${USER_DB_USERNAME}
+      MYSQL_PASSWORD: ${USER_DB_PASSWORD}
+      MYSQL_DATABASE: db_user
+    ports:
+      - "3312:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks:
+      - ms-net
+
+  mysql-technician:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${TECHNICIAN_MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${TECHNICIAN_DB_USERNAME}
+      MYSQL_PASSWORD: ${TECHNICIAN_DB_PASSWORD}
+      MYSQL_DATABASE: db_technician
+    ports:
+      - "3313:3306"
+    volumes:
+      - mysql_technician_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks:
+      - ms-net
+
+  mysql-service-request:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${SERVICE_REQUEST_MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${SERVICEREQUEST_DB_USERNAME}
+      MYSQL_PASSWORD: ${SERVICEREQUEST_DB_PASSWORD}
+      MYSQL_DATABASE: db_service_request
+    ports:
+      - "3314:3306"
+    volumes:
+      - mysql_service_request_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks:
+      - ms-net
+
+  mysql-asignacion:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ASSIGNMENT_MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${ASSIGNMENT_DB_USERNAME}
+      MYSQL_PASSWORD: ${ASSIGNMENT_DB_PASSWORD}
+      MYSQL_DATABASE: db_asignacion
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_asignacion_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks:
+      - ms-net
+
+  mysql-payment:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${PAYMENT_MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${PAYMENT_DB_USERNAME}
+      MYSQL_PASSWORD: ${PAYMENT_DB_PASSWORD}
+      MYSQL_DATABASE: db_payment
+    ports:
+      - "3316:3306"
+    volumes:
+      - mysql_payment_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks:
+      - ms-net
+
+  mysql-review:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${REVIEW_MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${REVIEW_DB_USERNAME}
+      MYSQL_PASSWORD: ${REVIEW_DB_PASSWORD}
+      MYSQL_DATABASE: db_review
+    ports:
+      - "3317:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks:
+      - ms-net
+
+  mysql-notification:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${NOTIFICATION_MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${NOTIFICATION_DB_USERNAME}
+      MYSQL_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      MYSQL_DATABASE: db_notification
+    ports:
+      - "3318:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks:
+      - ms-net
+
+  ms-auth:
+    build:
+      context: ../services/MS1
+      dockerfile: Dockerfile
+    container_name: ms-auth
+    restart: unless-stopped
+    depends_on:
+      mysql-auth:
+        condition: service_healthy
+      config-server-prod:
+        condition: service_started
+      registry-server-prod:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      CONFIG_SERVER_URL: http://config-server-prod:7072
+      EUREKA_URL: http://registry-server-dev:7081/eureka/,http://registry-server-prod:7082/eureka/
+      AUTH_DB_USERNAME: ${AUTH_DB_USERNAME}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+    ports:
+      - "8081:8081"
+    networks:
+      - ms-net
+
+  ms-user:
+    build:
+      context: ../services/MS2
+      dockerfile: Dockerfile
+    container_name: ms-user
+    restart: unless-stopped
+    depends_on:
+      mysql-user:
+        condition: service_healthy
+      config-server-prod:
+        condition: service_started
+      registry-server-prod:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      CONFIG_SERVER_URL: http://config-server-prod:7072
+      USER_DB_USERNAME: ${USER_DB_USERNAME}
+      USER_DB_PASSWORD: ${USER_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+    ports:
+      - "8082:8082"
+    networks:
+      - ms-net
+
+  ms-technician:
+    build:
+      context: ../services/MS3
+      dockerfile: Dockerfile
+    container_name: ms-technician
+    restart: unless-stopped
+    depends_on:
+      mysql-technician:
+        condition: service_healthy
+      config-server-prod:
+        condition: service_started
+      registry-server-prod:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      CONFIG_SERVER_URL: http://config-server-prod:7072
+      EUREKA_URL: http://registry-server-dev:7081/eureka/,http://registry-server-prod:7082/eureka/
+      TECHNICIAN_DB_USERNAME: ${TECHNICIAN_DB_USERNAME}
+      TECHNICIAN_DB_PASSWORD: ${TECHNICIAN_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+    ports:
+      - "8083:8083"
+    networks:
+      - ms-net
+
+  ms-service-request:
+    build:
+      context: ../services/MS4
+      dockerfile: Dockerfile
+    container_name: ms-service-request
+    restart: unless-stopped
+    depends_on:
+      mysql-service-request:
+        condition: service_healthy
+      config-server-prod:
+        condition: service_started
+      registry-server-prod:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      CONFIG_SERVER_URL: http://config-server-prod:7072
+      EUREKA_URL: http://registry-server-dev:7081/eureka/,http://registry-server-prod:7082/eureka/
+      SERVICEREQUEST_DB_USERNAME: ${SERVICEREQUEST_DB_USERNAME}
+      SERVICEREQUEST_DB_PASSWORD: ${SERVICEREQUEST_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+    ports:
+      - "8084:8084"
+    networks:
+      - ms-net
+
+  ms-assignment:
+    build:
+      context: ../services/MS5
+      dockerfile: Dockerfile
+    container_name: ms-assignment
+    restart: unless-stopped
+    depends_on:
+      mysql-asignacion:
+        condition: service_healthy
+      config-server-prod:
+        condition: service_started
+      registry-server-prod:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      CONFIG_SERVER_URL: http://config-server-prod:7072
+      EUREKA_URL: http://registry-server-dev:7081/eureka/,http://registry-server-prod:7082/eureka/
+      ASSIGNMENT_DB_USERNAME: ${ASSIGNMENT_DB_USERNAME}
+      ASSIGNMENT_DB_PASSWORD: ${ASSIGNMENT_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+    ports:
+      - "8085:8085"
+    networks:
+      - ms-net
+
+  ms-payment:
+    build:
+      context: ../services/MS6
+      dockerfile: Dockerfile
+    container_name: ms-payment
+    restart: unless-stopped
+    depends_on:
+      mysql-payment:
+        condition: service_healthy
+      config-server-prod:
+        condition: service_started
+      registry-server-prod:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      CONFIG_SERVER_URL: http://config-server-prod:7072
+      EUREKA_URL: http://registry-server-dev:7081/eureka/,http://registry-server-prod:7082/eureka/
+      PAYMENT_DB_USERNAME: ${PAYMENT_DB_USERNAME}
+      PAYMENT_DB_PASSWORD: ${PAYMENT_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+    ports:
+      - "8086:8086"
+    networks:
+      - ms-net
+
+  ms-review:
+    build:
+      context: ../services/MS7
+      dockerfile: Dockerfile
+    container_name: ms-review
+    restart: unless-stopped
+    depends_on:
+      mysql-review:
+        condition: service_healthy
+      config-server-prod:
+        condition: service_started
+      registry-server-prod:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      CONFIG_SERVER_URL: http://config-server-prod:7072
+      REVIEW_DB_USERNAME: ${REVIEW_DB_USERNAME}
+      REVIEW_DB_PASSWORD: ${REVIEW_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+    ports:
+      - "8087:8087"
+    networks:
+      - ms-net
+
+  ms-notification:
+    build:
+      context: ../services/MS8
+      dockerfile: Dockerfile
+    container_name: ms-notification
+    restart: unless-stopped
+    depends_on:
+      mysql-notification:
+        condition: service_healthy
+      config-server-prod:
+        condition: service_started
+      registry-server-prod:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      CONFIG_SERVER_URL: http://config-server-prod:7072
+      NOTIFICATION_DB_USERNAME: ${NOTIFICATION_DB_USERNAME}
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+    ports:
+      - "8088:8088"
+    networks:
+      - ms-net
+# 🔜 FUTURO es ahora
+#  gateway:
+#    build: ./gateway
+#    ports:
+#      - "8080:8080"
+#    networks:
+#      - ms-net
+
+networks:
+  ms-net:
+    #external: true
+    name: ms-net
+
+volumes:
+  mysql_technician_data:
+  mysql_service_request_data:
+  mysql_asignacion_data:
+  mysql_payment_data:
